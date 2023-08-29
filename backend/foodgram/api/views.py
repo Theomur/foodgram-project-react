@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import (Favorite, Ingredient, Recipe, Ingredient_In_Recipe,
+from recipes.models import (Favorite, Ingredient, Recipe,
                             Shopping_cart, Tag)
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
