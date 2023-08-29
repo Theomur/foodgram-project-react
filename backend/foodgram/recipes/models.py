@@ -46,16 +46,13 @@ class Recipe(models.Model):
     )
     cooking_time = models.IntegerField()
     pub_date = models.DateTimeField(
-        auto_now_add=True
-        )
+        auto_now_add=True)
     tags = models.ManyToManyField(
-        Tag
-        )
+        Tag)
     ingredients = models.ManyToManyField(
         Ingredient,
         through='Ingredient_In_Recipe',
-        through_fields=('recipe', 'ingredient'),
-        )
+        through_fields=('recipe', 'ingredient'),)
 
     class Meta:
         ordering = ['-pub_date']
@@ -95,8 +92,7 @@ class Ingredient_In_Recipe(models.Model):
         return (
             f'"{self.ingredient.name}" в "{self.recipe.name}": '
             f'{self.amount}, '
-            f'{self.ingredient.measurement_unit}'
-            )
+            f'{self.ingredient.measurement_unit}')
 
 
 class Favorite(models.Model):
