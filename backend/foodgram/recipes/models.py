@@ -3,14 +3,14 @@ from users.models import User
 
 
 class Tag(models.Model):
-    name = models.CharField()
+    name = models.CharField(max_length=200)
 
     slug = models.SlugField(
         unique=True,
         null=True
     )
 
-    color = models.CharField()
+    color = models.CharField(max_length=10)
 
     class Meta:
         verbose_name = 'Тег'
@@ -21,8 +21,8 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
 
-    name = models.CharField()
-    measurement_unit = models.CharField()
+    name = models.CharField(max_length=200)
+    measurement_unit = models.CharField(max_length=200)
 
     class Meta:
         ordering = ['name']
@@ -38,7 +38,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
         )
-    name = models.CharField()
+    name = models.CharField(max_length=200)
     description = models.TextField()
     image = models.ImageField(
         upload_to='recipes/',
@@ -139,7 +139,6 @@ class Shopping_cart(models.Model):
 
     class Meta:
         verbose_name = 'Корзина'
-        verbose_name_plural = 'Корзина'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
