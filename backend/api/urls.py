@@ -10,10 +10,9 @@ router.register('tags', views.TagViewSet, basename='tags')
 router.register('users', views.UserViewSet, basename='users')
 router.register('ingredients',
                 views.IngredientViewSet,
-                basename='ingredients'
-                )
+                basename='ingredients')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path(r'auth/', include('djoser.urls.authtoken')),
+    path('auth/', include('djoser.urls.authtoken')),
 ]

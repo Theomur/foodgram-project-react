@@ -140,3 +140,5 @@ DJOSER = {
 }
 
 AUTH_USER_MODEL = 'users.User'
+
+FILE_NAME = 'shopping_cart.txt'
