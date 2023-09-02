@@ -1,16 +1,28 @@
 from django.db import models
 from users.models import User
+from django.core.validators import MinValueValidator, RegexValidator
+from foodgram.settings import LINE_LIMIT
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=200)
-
-    slug = models.SlugField(
-        unique=True,
-        null=True
+    name = models.CharField(
+        LINE_LIMIT,
+        unique=True
     )
 
-    color = models.CharField(max_length=10)
+    slug = models.SlugField(unique=True)
+
+    color = models.CharField(
+        'Цвет в HEX',
+        max_length=7,
+        null=True,
+        validators=[
+            RegexValidator(
+                '^#([a-fA-F0-9]{6})',
+                message='Поле должно содержать HEX-код выбранного цвета.'
+            )
+        ]
+    )
 
     class Meta:
         verbose_name = 'Тег'
@@ -21,11 +33,11 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
 
-    name = models.CharField(max_length=200)
-    measurement_unit = models.CharField(max_length=200)
+    name = models.CharField(LINE_LIMIT)
+    measurement_unit = models.CharField(LINE_LIMIT)
 
     class Meta:
-        ordering = ['name']
+        ordering = ('name',)
         verbose_name = 'Ингридиент'
 
     def __str__(self):
@@ -38,17 +50,16 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
     )
-    name = models.CharField(max_length=200)
-    description = models.TextField()
+    name = models.CharField(LINE_LIMIT)
+    text = models.TextField()
     image = models.ImageField(
         upload_to='recipes/',
-        blank=True
+        blank=False
     )
-    cooking_time = models.IntegerField()
+    cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
     pub_date = models.DateTimeField(
         auto_now_add=True)
-    tags = models.ManyToManyField(
-        Tag)
+    tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient,
         through='Ingredient_In_Recipe',
@@ -62,7 +73,7 @@ class Recipe(models.Model):
         return self.name
 
 
-class Ingredient_In_Recipe(models.Model):
+class IngredientInRecipe(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
@@ -77,7 +88,7 @@ class Ingredient_In_Recipe(models.Model):
         verbose_name='Ингредиент'
     )
 
-    amount = models.IntegerField()
+    amount = models.IntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = 'Ингредиенты в рецепте'
@@ -91,20 +102,19 @@ class Ingredient_In_Recipe(models.Model):
     def __str__(self):
         return (
             f'"{self.ingredient.name}" в "{self.recipe.name}": '
-            f'{self.amount}, '
-            f'{self.ingredient.measurement_unit}')
+            f'{self.amount}')
 
 
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorite_user'
+        related_name='favorite'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite_recipe'
+        related_name='favorite'
     )
 
     class Meta:

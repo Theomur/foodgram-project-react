@@ -3,12 +3,12 @@ from django.core import exceptions as django_exceptions
 from django.db.transaction import atomic
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_base64.fields import Base64ImageField
-from recipes.models import (Favorite, Ingredient, Ingredient_In_Recipe, Recipe,
-                            Shopping_cart, Tag)
+from recipes.models import (Ingredient, IngredientInRecipe,
+                            Recipe, Tag, Favorite, Shopping_cart)
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from rest_framework.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from users.models import Subscribe, User
 
 
@@ -123,7 +123,7 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         limit = request.query_params.get('recipes_limit')
-        recipes = Recipe.objects.all()  # or any other queryset
+        recipes = Recipe.objects.all()
         if limit is not None:
             recipes = recipes[:int(limit)]
         return RecipeShortSerializer(recipes, many=True).data
@@ -148,7 +148,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         source='ingredient.measurement_unit')
 
     class Meta:
-        model = Ingredient_In_Recipe
+        model = IngredientInRecipe
         fields = ('id', 'name',
                   'measurement_unit', 'amount')
 
@@ -171,29 +171,22 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time')
 
     def get_is_favorited(self, obj):
-        try:
-            return Favorite.objects.filter(user=self.context['request'].user,
-                                           recipe=obj).exists()
-        except Exception:
-            return False
+        return getattr(obj, 'is_favorited', False)
 
     def get_is_in_shopping_cart(self, obj):
-        try:
-            return Shopping_cart.objects.filter(
-                user=self.context['request'].user,
-                recipe=obj).exists()
-        except Exception:
-            return False
+        return getattr(obj, 'is_in_shopping_cart', False)
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField()
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=IngredientInRecipe.objects.all()
+    )
     amount = serializers.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(1000)]
     )
 
     class Meta:
-        model = Ingredient_In_Recipe
+        model = IngredientInRecipe
         fields = ('id', 'amount')
 
 
@@ -235,7 +228,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def tags_and_ingredients_set(self, recipe, tags, ingredients):
         recipe.tags.set(tags)
-        [Ingredient_In_Recipe.objects.bulk_create(
+        [IngredientInRecipe.objects.bulk_create(
             recipe=recipe,
             ingredient=ingredient['id'],
             amount=ingredient['amount']
@@ -284,3 +277,46 @@ class CustomPageNumberPagination(PageNumberPagination):
             })
         else:
             return super().get_paginated_response(data)
+
+
+class SubscribeSerializer(serializers.Serializer):
+    class Meta:
+        model = Subscribe
+        fields = ('user', 'author')
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        author = validated_data['author']
+        subscribe = Subscribe.objects.get_or_create(user=user, author=author)
+        return subscribe
+
+    def delete(self, validated_data):
+        user = self.context['request'].user
+        author = validated_data['author']
+        Subscribe.objects.filter(user=user, author=author).delete()
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ['user', 'recipe']
+
+    def validate(self, data):
+        user = data['user']
+        recipe = data['recipe']
+        if Favorite.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError("Рецепт уже в избранном.")
+        return data
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shopping_cart
+        fields = ['user', 'recipe']
+
+    def validate(self, data):
+        user = data['user']
+        recipe = data['recipe']
+        if Shopping_cart.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError("Рецепт уже в списке покупок.")
+        return data
