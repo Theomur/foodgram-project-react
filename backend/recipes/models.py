@@ -1,24 +1,29 @@
+from colorfield.fields import ColorField
+from django.conf import settings
+from django.core.validators import (MaxValueValidator, MinValueValidator,
+                                    RegexValidator)
 from django.db import models
 from users.models import User
-from django.core.validators import MinValueValidator, RegexValidator
-from foodgram.settings import LINE_LIMIT
 
 
 class Tag(models.Model):
     name = models.CharField(
-        LINE_LIMIT,
+        max_length=settings.LENGTH_OF_FIELDS_RECIPES_RELATED,
         unique=True
     )
 
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(
+        max_length=settings.LENGTH_OF_FIELDS_RECIPES_RELATED,
+        unique=True
+    )
 
-    color = models.CharField(
+    color = ColorField(
         'Цвет в HEX',
         max_length=7,
         null=True,
         validators=[
             RegexValidator(
-                '^#([a-fA-F0-9]{6})',
+                r'^#([a-fA-F0-9]{6})',
                 message='Поле должно содержать HEX-код выбранного цвета.'
             )
         ]
@@ -33,8 +38,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
 
-    name = models.CharField(LINE_LIMIT)
-    measurement_unit = models.CharField(LINE_LIMIT)
+    name = models.CharField(
+        max_length=settings.LENGTH_OF_FIELDS_RECIPES_RELATED
+    )
+    measurement_unit = models.CharField(
+        max_length=settings.LENGTH_OF_FIELDS_RECIPES_RELATED
+    )
 
     class Meta:
         ordering = ('name',)
@@ -50,19 +59,27 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
     )
-    name = models.CharField(LINE_LIMIT)
+    name = models.CharField(
+        max_length=settings.LENGTH_OF_FIELDS_RECIPES_RELATED
+    )
     text = models.TextField()
     image = models.ImageField(
         upload_to='recipes/',
         blank=False
     )
-    cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
-    pub_date = models.DateTimeField(
-        auto_now_add=True)
+    cooking_time = models.PositiveSmallIntegerField(
+        verbose_name='Время готовки',
+        validators=[MinValueValidator(
+            1, message='Время приготовления не менее 1 минуты!'
+        ), MaxValueValidator(
+            1441, message='Время приготовления не более 24 часов!'
+        )]
+    )
+    pub_date = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='Ingredient_In_Recipe',
+        through='IngredientInRecipe',
         through_fields=('recipe', 'ingredient'),)
 
     class Meta:
@@ -88,7 +105,9 @@ class IngredientInRecipe(models.Model):
         verbose_name='Ингредиент'
     )
 
-    amount = models.IntegerField(validators=[MinValueValidator(1)])
+    amount = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)]
+    )
 
     class Meta:
         verbose_name = 'Ингредиенты в рецепте'
