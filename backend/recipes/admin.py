@@ -1,24 +1,44 @@
 from django.contrib import admin
-from . import models
+
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingList, Subscription, Tag)
 
 
-@admin.register(models.Ingredient)
-class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'measurement_unit')
-    list_filter = ('name', )
-    search_fields = ('name', )
-    empty_value_display = '-пусто-'
+class IngredientInline(admin.TabularInline):
+    model = RecipeIngredient
 
 
-@admin.register(models.Tag)
+@admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'color', 'slug')
-    list_editable = ('name', 'color', 'slug')
-    empty_value_display = '-пусто-'
+    pass
 
 
-@admin.register(models.Recipe)
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+
+
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'author')
-    list_filter = ('name', 'author', 'tags')
-    empty_value_display = '-пусто-'
+    search_fields = ("name",)
+    inlines = (IngredientInline,)
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ShoppingList)
+class ShoppingListAdmin(admin.ModelAdmin):
+    pass

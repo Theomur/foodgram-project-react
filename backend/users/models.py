@@ -13,16 +13,13 @@ def validate_username(value):
 
 class User(AbstractUser):
     email = models.EmailField(
-        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED,
-        unique=True
+        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED, unique=True
     )
     first_name = models.CharField(
-        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED,
-        blank=False
+        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED, blank=False
     )
     last_name = models.CharField(
-        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED,
-        blank=False
+        max_length=settings.LENGTH_OF_FIELDS_USER_RELATED, blank=False
     )
 
     username = models.CharField(
@@ -30,42 +27,16 @@ class User(AbstractUser):
         unique=True,
         validators=[validate_username, UnicodeUsernameValidator()],
         error_messages={
-            'unique': 'Пользователь с таким именем уже существует.',
+            "unique": "Пользователь с таким именем уже существует.",
         },
     )
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "first_name", "last_name", "password"]
 
     class Meta:
-        ordering = ('username',)
-        verbose_name = 'Пользователь'
+        ordering = ("username",)
+        verbose_name = "Пользователь"
 
     def __str__(self):
         return self.username
-
-
-class Subscribe(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscriber'
-    )
-
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='subscribed'
-    )
-
-    def __str__(self):
-        return f'{self.user.username} - {self.author.username}'
-
-    class Meta:
-        verbose_name = 'Подписка на авторов'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'author'),
-                name='unique_subscribe'
-            )
-        ]
