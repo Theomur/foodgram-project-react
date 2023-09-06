@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingList, Subscription, Tag)
+                     ShoppingList, Subscribe, Tag)
 
 
 class IngredientInline(admin.TabularInline):
@@ -34,8 +34,8 @@ class FavoriteAdmin(admin.ModelAdmin):
     pass
 
 
-@admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
+@admin.register(Subscribe)
+class SubscribeAdmin(admin.ModelAdmin):
     pass
 
 

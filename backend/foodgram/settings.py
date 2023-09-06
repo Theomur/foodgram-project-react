@@ -41,13 +41,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "users.apps.UsersConfig",
-    "recipes.apps.RecipesConfig",
-    "api.apps.ApiConfig",
     "rest_framework",
     "rest_framework.authtoken",
     "django_filters",
     "djoser",
+    "api",
+    "recipes",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -179,8 +179,6 @@ DJOSER = {
 }
 
 AUTH_USER_MODEL = 'users.User'
-
-FILE_NAME = 'shopping_cart.txt'
 
 LENGTH_OF_FIELDS_USER_RELATED = 150
 LENGTH_OF_FIELDS_RECIPES_RELATED = 200
