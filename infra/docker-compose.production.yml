@@ -9,10 +9,7 @@ services:
       - ./.env
   
   backend:
-      # image: theomur/foodgram_backend
-      build:
-        context: ../backend
-        dockerfile: Dockerfile
+      image: theomur/foodgram_backend
       restart: always
       volumes:
         - static_value:/app/static/
