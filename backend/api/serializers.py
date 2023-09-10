@@ -12,14 +12,16 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from users.models import Subscribe, User
 
 
-def get_is_subscribed(request, obj):
-    if request and request.user and request.user.is_authenticated:
-        return Subscribe.objects.filter(user=request.user,
-                                        author=obj).exists()
-    return False
+class SubscriptionMixin:
+    def get_is_subscribed(self, obj):
+        if (self.context.get('request')
+           and not self.context['request'].user.is_anonymous):
+            return Subscribe.objects.filter(user=self.context['request'].user,
+                                            author=obj).exists()
+        return False
 
 
-class ReadUsersSerializer(UserSerializer):
+class ReadUsersSerializer(UserSerializer, SubscriptionMixin):
 
     is_subscribed = serializers.SerializerMethodField()
 
@@ -32,10 +34,6 @@ class ReadUsersSerializer(UserSerializer):
                   'last_name',
                   'is_subscribed'
                   )
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        return get_is_subscribed(request, obj)
 
 
 class CreateUserSerializer(UserCreateSerializer):
@@ -101,7 +99,8 @@ class RecipeShortSerializer(serializers.ModelSerializer):
                   'image', 'cooking_time')
 
 
-class SubscriptionsSerializer(serializers.ModelSerializer):
+class SubscriptionsSerializer(serializers.ModelSerializer,
+                              SubscriptionMixin):
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -112,10 +111,6 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
                   'username', 'first_name',
                   'last_name', 'is_subscribed',
                   'recipes', 'recipes_count')
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        return get_is_subscribed(request, obj)
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -284,16 +279,16 @@ class SubscribeSerializer(serializers.Serializer):
         model = Subscribe
         fields = ('user', 'author')
 
-    def create(self, validated_data):
-        user = self.context['request'].user
-        author = validated_data['author']
-        subscribe = Subscribe.objects.get_or_create(user=user, author=author)
-        return subscribe
-
-    def delete(self, validated_data):
-        user = self.context['request'].user
-        author = validated_data['author']
-        Subscribe.objects.filter(user=user, author=author).delete()
+    def validate(self, data):
+        user = data.get('user')
+        author = data.get('author')
+        if user == author:
+            raise serializers.ValidationError(
+                "Вы не можете подписываться на самого себя.")
+        if Subscribe.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError(
+                "Вы уже подписаны на этого пользователя.")
+        return data
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

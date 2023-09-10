@@ -1,19 +1,21 @@
 from django.db import models
 from users.models import User
 from django.core.validators import MinValueValidator, RegexValidator
-from foodgram.settings import LINE_LIMIT
+from django.conf import settings
 
 
 class Tag(models.Model):
     name = models.CharField(
-        LINE_LIMIT,
+        max_length=settings.LINE_LIMIT_RECIPES,
         unique=True
     )
 
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(
+        max_length=settings.LINE_LIMIT_RECIPES,
+        unique=True
+    )
 
     color = models.CharField(
-        'Цвет в HEX',
         max_length=7,
         null=True,
         validators=[
@@ -33,8 +35,8 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
 
-    name = models.CharField(LINE_LIMIT)
-    measurement_unit = models.CharField(LINE_LIMIT)
+    name = models.CharField(max_length=settings.LINE_LIMIT_RECIPES)
+    measurement_unit = models.CharField(max_length=settings.LINE_LIMIT_RECIPES)
 
     class Meta:
         ordering = ('name',)
@@ -50,7 +52,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes',
     )
-    name = models.CharField(LINE_LIMIT)
+    name = models.CharField(max_length=settings.LINE_LIMIT_RECIPES)
     text = models.TextField()
     image = models.ImageField(
         upload_to='recipes/',
@@ -62,7 +64,7 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='Ingredient_In_Recipe',
+        through='IngredientInRecipe',
         through_fields=('recipe', 'ingredient'),)
 
     class Meta:

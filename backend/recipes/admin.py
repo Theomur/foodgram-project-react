@@ -22,3 +22,15 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'author')
     list_filter = ('name', 'author', 'tags')
     empty_value_display = '-пусто-'
+
+
+@admin.register(models.Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'recipe')
+    list_editable = ('user', 'recipe')
+
+
+@admin.register(models.Shopping_cart)
+class ShoppingCartAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'recipe')
+    list_editable = ('user', 'recipe')

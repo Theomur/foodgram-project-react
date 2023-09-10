@@ -2,7 +2,6 @@ from django.db.models import BooleanField, Exists, OuterRef, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             Shopping_cart, Tag)
 from rest_framework import filters, mixins, status, viewsets
@@ -10,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from users.models import User
+from users.models import User, Subscribe
 from foodgram.settings import FILE_NAME
 
 from .filters import RecipeFilter
@@ -20,7 +19,7 @@ from .serializers import (CustomPageNumberPagination, IngredientSerializer,
                           SubscriptionsSerializer, TagSerializer,
                           UserCreateSerializer, SubscribeSerializer,
                           FavoriteSerializer, ShoppingCartSerializer,
-                          RecipeReadSerializer)
+                          RecipeReadSerializer, SetPasswordSerializer)
 
 favorite_subquery = Favorite.objects.filter(user=OuterRef('pk'),
                                             recipe=OuterRef('pk'))
@@ -28,10 +27,13 @@ shopping_cart_subquery = Shopping_cart.objects.filter(user=OuterRef('pk'),
                                                       recipe=OuterRef('pk'))
 
 
-class UserViewSet(DjoserUserViewSet):
+class UserViewSet(mixins.CreateModelMixin,
+                  mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
+                  viewsets.GenericViewSet):
     queryset = User.objects.all()
-    pagination_class = CustomPageNumberPagination
     permission_classes = (AllowAny,)
+    pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -46,12 +48,22 @@ class UserViewSet(DjoserUserViewSet):
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'],
+    @action(detail=False, methods=['post'],
             permission_classes=(IsAuthenticated,))
+    def set_password(self, request):
+        serializer = SetPasswordSerializer(request.user, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+        return Response({'detail': 'Пароль успешно изменен!'},
+                        status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=(IsAuthenticated,),
+            pagination_class=CustomPageNumberPagination)
     def subscriptions(self, request):
         queryset = User.objects.filter(subscribing__user=request.user)
-        pages = self.paginate_queryset(queryset)
-        serializer = SubscriptionsSerializer(pages, many=True,
+        page = self.paginate_queryset(queryset)
+        serializer = SubscriptionsSerializer(page, many=True,
                                              context={'request': request})
         return self.get_paginated_response(serializer.data)
 
@@ -69,21 +81,10 @@ class UserViewSet(DjoserUserViewSet):
     @action(detail=True, methods=['delete'])
     def unsubscribe(self, request, **kwargs):
         author = self.get_object()
-        serializer = SubscribeSerializer(data={'author': author.id},
-                                         context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.delete()
+        get_object_or_404(Subscribe, user=request.user,
+                          author=author).delete()
         return Response({'detail': 'Успешная отписка'},
                         status=status.HTTP_204_NO_CONTENT)
-
-
-class Utility:
-    @staticmethod
-    def create_object(serializer_class, pk, request):
-        data = {'user': request.user.id, 'recipe': pk}
-        serializer = serializer_class(data=data, context={'request': request})
-        if serializer.is_valid(raise_exception=True):
-            return serializer.save()
 
 
 class IngredientViewSet(mixins.ListModelMixin,
@@ -112,6 +113,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'create', 'delete']
 
+    @staticmethod
+    def create_object(serializer_class, pk, request):
+        data = {'user': request.user.id, 'recipe': pk}
+        serializer = serializer_class(data=data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        return serializer.save()
+
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
@@ -129,8 +137,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
-        Utility.create_object(FavoriteSerializer, kwargs['pk'], request)
-        return Response(status=status.HTTP_201_CREATED)
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
+        serializer = FavoriteSerializer(recipe, data=request.data,
+                                        context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        if not Favorite.objects.filter(user=request.user,
+                                       recipe=recipe).exists():
+            Favorite.objects.create(user=request.user, recipe=recipe)
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
+        return Response({'errors': 'Рецепт уже в избранном.'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @favorite.mapping.delete
     def delete_favorite(self, request, **kwargs):
@@ -142,7 +159,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, **kwargs):
-        Utility.create_object(ShoppingCartSerializer, kwargs['pk'], request)
+        self. create_object(ShoppingCartSerializer, kwargs['pk'], request)
         return Response(status=status.HTTP_201_CREATED)
 
     @shopping_cart.mapping.delete
