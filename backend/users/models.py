@@ -22,7 +22,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=settings.LINE_LIMIT_USERS,
         unique=True,
-        validators=[validate_username(), UnicodeUsernameValidator()],
+        validators=[validate_username, UnicodeUsernameValidator()],
         error_messages={
             'unique': 'Пользователь с таким именем уже существует.',
         },
