@@ -1,7 +1,8 @@
+from django.conf import settings
+from django.core.validators import (MaxValueValidator, MinValueValidator,
+                                    RegexValidator)
 from django.db import models
 from users.models import User
-from django.core.validators import MinValueValidator, RegexValidator
-from django.conf import settings
 
 
 class Tag(models.Model):
@@ -39,6 +40,13 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField(max_length=settings.LINE_LIMIT_RECIPES)
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_name_measurement_unit'
+            )
+        ]
+
         ordering = ('name',)
         verbose_name = 'Ингридиент'
 
@@ -58,7 +66,10 @@ class Recipe(models.Model):
         upload_to='recipes/',
         blank=False
     )
-    cooking_time = models.IntegerField(validators=[MinValueValidator(1)])
+    cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(1440)]
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True)
     tags = models.ManyToManyField(Tag)
@@ -68,7 +79,7 @@ class Recipe(models.Model):
         through_fields=('recipe', 'ingredient'),)
 
     class Meta:
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
         verbose_name = 'Рецепт'
 
     def __str__(self):
@@ -90,13 +101,16 @@ class IngredientInRecipe(models.Model):
         verbose_name='Ингредиент'
     )
 
-    amount = models.IntegerField(validators=[MinValueValidator(1)])
+    amount = models.PositiveIntegerField(
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(1000)]
+    )
 
     class Meta:
         verbose_name = 'Ингредиенты в рецепте'
         constraints = [
             models.UniqueConstraint(
-                fields=['recipe', 'ingredient'],
+                fields=('recipe', 'ingredient'),
                 name='unique_combination'
             )
         ]
@@ -111,19 +125,19 @@ class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorite'
+        related_name='favorites'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite'
+        related_name='favorites'
     )
 
     class Meta:
         verbose_name = 'Избранное'
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'recipe'],
+                fields=('user', 'recipe'),
                 name='unique_favorite'
             )
         ]
@@ -136,21 +150,21 @@ class Shopping_cart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_user',
+        related_name='shopping_cart',
     )
 
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='shopping_recipe',
+        related_name='shopping_cart',
     )
 
     class Meta:
         verbose_name = 'Корзина'
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='unique_shopping_cart'
+                fields=('user', 'recipe'),
+                name='shopping_cart'
             )
         ]
 

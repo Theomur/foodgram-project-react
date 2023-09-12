@@ -14,10 +14,8 @@ def validate_username(value):
 class User(AbstractUser):
     email = models.EmailField(unique=True,
                               max_length=settings.LINE_LIMIT_EMAIL)
-    first_name = models.CharField(max_length=settings.LINE_LIMIT_USERS,
-                                  blank=False)
-    last_name = models.CharField(max_length=settings.LINE_LIMIT_USERS,
-                                 blank=False)
+    # first_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
+    # last_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
 
     username = models.CharField(
         max_length=settings.LINE_LIMIT_USERS,
@@ -52,9 +50,6 @@ class Subscribe(models.Model):
         related_name='subscribed'
     )
 
-    def __str__(self):
-        return f'{self.user.username} - {self.author.username}'
-
     class Meta:
         verbose_name = 'Подписка на авторов'
         constraints = [
@@ -63,3 +58,6 @@ class Subscribe(models.Model):
                 name='unique_subscribe'
             )
         ]
+
+    def __str__(self):
+        return f'{self.user.username} - {self.author.username}'
