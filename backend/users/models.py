@@ -6,7 +6,6 @@ from django.db import models
 
 
 def validate_username(value):
-    # Проверка на использование "me" в качестве имени пользователя
     if value.lower() == "me":
         raise ValidationError('Имя пользователя "me" недопустимо.')
 
@@ -14,8 +13,8 @@ def validate_username(value):
 class User(AbstractUser):
     email = models.EmailField(unique=True,
                               max_length=settings.LINE_LIMIT_EMAIL)
-    # first_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
-    # last_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
+    first_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
+    last_name = models.CharField(max_length=settings.LINE_LIMIT_USERS)
 
     username = models.CharField(
         max_length=settings.LINE_LIMIT_USERS,

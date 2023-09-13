@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.validators import (MaxValueValidator, MinValueValidator,
                                     RegexValidator)
+
 from django.db import models
 from users.models import User
 
@@ -66,9 +67,9 @@ class Recipe(models.Model):
         upload_to='recipes/',
         blank=False
     )
-    cooking_time = models.PositiveIntegerField(
+    cooking_time = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1),
-                    MaxValueValidator(1440)]
+                    MaxValueValidator(30000)]
     )
     pub_date = models.DateTimeField(
         auto_now_add=True)
@@ -101,9 +102,9 @@ class IngredientInRecipe(models.Model):
         verbose_name='Ингредиент'
     )
 
-    amount = models.PositiveIntegerField(
+    amount = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1),
-                    MaxValueValidator(1000)]
+                    MaxValueValidator(30000)]
     )
 
     class Meta:
