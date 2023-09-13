@@ -6,6 +6,7 @@ from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from users.models import Subscribe, User
+from recipes.models import Favorite, Shopping_cart
 
 
 class SubscriptionMixin:
@@ -131,14 +132,20 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time')
 
     def get_is_favorited(self, obj):
-        user = self.context.get('request').user
-        return (user.is_authenticated
-                and user.favorites.filter(recipe=obj).exists())
+        request = self.context.get('request')
+        return (
+            request
+            and request.user.is_authenticated
+            and Favorite.objects.filter(user=request.user).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user
-        return (user.is_authenticated
-                and user.shopping_cart.filter(recipe=obj).exists())
+        request = self.context.get('request')
+        return (
+            request
+            and request.user.is_authenticated
+            and Shopping_cart.objects.filter(user=request.user).exists()
+        )
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
@@ -212,13 +219,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     @atomic
     def update(self, instance, validated_data):
         instance.image = validated_data.get('image', instance.image)
-        try:
-            instance.name = validated_data.pop('name')
-            instance.text = validated_data.pop('text')
-            instance.cooking_time = validated_data.pop('cooking_time')
-        except Exception as e:
-            raise serializers.ValidationError(
-                {str(e)[1:-1]: ['Обязательное поле.']})
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         instance.ingredients.clear()
