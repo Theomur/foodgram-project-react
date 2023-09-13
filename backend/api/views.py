@@ -17,7 +17,7 @@ from .pagination import PageSizeControlPagination
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
-                          SubscriptionSerializer, TagSerializer)
+                          SubscriptionsSerializer, SubscribeSerializer, TagSerializer)
 
 
 class UserViewSet(UserViewSet):
@@ -30,8 +30,8 @@ class UserViewSet(UserViewSet):
     def subscriptions(self, request):
         queryset = User.objects.filter(subscribed__user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = SubscriptionSerializer(page, many=True,
-                                            context={'request': request})
+        serializer = SubscriptionsSerializer(page, many=True,
+                                             context={'request': request})
         return self.get_paginated_response(serializer.data)
 
     @action(
@@ -45,9 +45,9 @@ class UserViewSet(UserViewSet):
         author = get_object_or_404(User, id=author_id)
 
         if request.method == 'POST':
-            serializer = SubscriptionSerializer(author,
-                                                data=request.data,
-                                                context={"request": request})
+            serializer = SubscribeSerializer(author,
+                                             data=request.data,
+                                             context={"request": request})
             serializer.is_valid(raise_exception=True)
             Subscribe.objects.create(user=user, author=author)
             return Response(serializer.data, status=status.HTTP_201_CREATED)

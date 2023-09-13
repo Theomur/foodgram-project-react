@@ -19,7 +19,7 @@ class SubscriptionMixin:
         )
 
 
-class UsersSerializer(UserSerializer, SubscriptionMixin):
+class UsersSerializer(SubscriptionMixin, UserSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
 
@@ -43,7 +43,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
                   'image', 'cooking_time')
 
 
-class SubscriptionSerializer(UsersSerializer):
+class SubscriptionsSerializer(UsersSerializer):
     recipes_count = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
 
@@ -52,21 +52,6 @@ class SubscriptionSerializer(UsersSerializer):
             'recipes_count', 'recipes'
         )
         read_only_fields = ('email', 'username')
-
-    def validate_subscription(self, data):
-        author = self.instance
-        user = self.context.get('request').user
-        if Subscribe.objects.filter(author=author, user=user).exists():
-            raise ValidationError(
-                detail='Вы уже подписаны на этого пользователя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        if user == author:
-            raise ValidationError(
-                detail='Вы не можете подписаться на самого себя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        return data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -81,6 +66,27 @@ class SubscriptionSerializer(UsersSerializer):
                                            many=True,
                                            read_only=True)
         return serializer.data
+
+
+class SubscribeSerializer(serializers.Serializer):
+    class Meta:
+        model = Subscribe
+        fields = ('user', 'author')
+    
+    def validate_subscription(self, data):
+        author = self.instance
+        user = self.context.get('request').user
+        if Subscribe.objects.filter(author=author, user=user).exists():
+            raise ValidationError(
+                detail='Вы уже подписаны на этого пользователя!',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        if user == author:
+            raise ValidationError(
+                detail='Вы не можете подписаться на самого себя!',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        return data
 
 
 class IngredientSerializer(serializers.ModelSerializer):
