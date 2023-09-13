@@ -1,15 +1,11 @@
-from django.contrib.auth.password_validation import validate_password
-from django.core import exceptions as django_exceptions
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.transaction import atomic
 from djoser.serializers import UserSerializer
 from drf_base64.fields import Base64ImageField
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            Shopping_cart, Tag)
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import serializers, status
-from users.models import Subscribe, User
-from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.exceptions import ValidationError
+from users.models import Subscribe, User
 
 
 class SubscriptionMixin:
@@ -35,34 +31,6 @@ class UsersSerializer(UserSerializer, SubscriptionMixin):
                   'first_name',
                   'last_name',
                   'is_subscribed')
-
-
-class SetPasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField()
-    new_password = serializers.CharField()
-
-    def validate(self, obj):
-        try:
-            validate_password(obj['new_password'])
-        except django_exceptions.ValidationError as e:
-            raise serializers.ValidationError(
-                {'new_password': list(e.messages)}
-            )
-        return super().validate(obj)
-
-    def update(self, instance, validated_data):
-        if not instance.check_password(validated_data['current_password']):
-            raise serializers.ValidationError(
-                {'current_password': 'Неправильный пароль.'}
-            )
-        if (validated_data['current_password']
-           == validated_data['new_password']):
-            raise serializers.ValidationError(
-                {'new_password': 'Новый пароль должен отличаться от текущего.'}
-            )
-        instance.set_password(validated_data['new_password'])
-        instance.save()
-        return validated_data
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -254,28 +222,3 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeReadSerializer(instance,
                                     context=self.context).data
-
-
-class FavoriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Favorite
-        fields = ['user', 'recipe']
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Favorite.objects.all(),
-                fields=['user', 'recipe']
-            )
-        ]
-
-
-class ShoppingCartSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Shopping_cart
-        fields = ['user', 'recipe']
-
-    def validate(self, data):
-        user = data['user']
-        recipe = data['recipe']
-        if Shopping_cart.objects.filter(user=user, recipe=recipe).exists():
-            raise serializers.ValidationError("Рецепт уже в списке покупок.")
-        return data

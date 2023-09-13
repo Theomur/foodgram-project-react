@@ -175,10 +175,6 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
-    'DEFAULT_PAGINATION_CLASS': [
-        'api.pagination.PageSizeControlPagination',
-    ],
-    'PAGE_SIZE': 6,
     'SEARCH_PARAM': 'name',
 }
 
@@ -190,3 +186,5 @@ FILE_NAME = 'shopping_cart.txt'
 LINE_LIMIT_EMAIL = 254
 LINE_LIMIT_RECIPES = 200
 LINE_LIMIT_USERS = 150
+
+PAGE_SIZE = 6

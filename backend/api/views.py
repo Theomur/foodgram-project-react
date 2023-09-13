@@ -14,7 +14,7 @@ from users.models import Subscribe, User
 
 from .filters import RecipeFilter
 from .pagination import PageSizeControlPagination
-from .permissions import IsAuthorOrReadOnly
+from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
                           SubscriptionSerializer, TagSerializer)
@@ -78,7 +78,7 @@ class TagViewSet(mixins.ListModelMixin,
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageSizeControlPagination
-    permission_classes = (IsAuthorOrReadOnly, )
+    permission_classes = (IsAuthorOrIsAuthenticatedOrReadOnly, )
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'create', 'delete']
