@@ -72,7 +72,7 @@ class SubscribeSerializer(serializers.Serializer):
     class Meta:
         model = Subscribe
         fields = ('user', 'author')
-    
+
     def validate_subscription(self, data):
         author = self.instance
         user = self.context.get('request').user

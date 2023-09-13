@@ -17,7 +17,8 @@ from .pagination import PageSizeControlPagination
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
-                          SubscriptionsSerializer, SubscribeSerializer, TagSerializer)
+                          SubscriptionsSerializer, SubscribeSerializer,
+                          TagSerializer)
 
 
 class UserViewSet(UserViewSet):
