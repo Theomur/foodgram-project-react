@@ -147,6 +147,10 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             and Shopping_cart.objects.filter(user=request.user).exists()
         )
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return representation
+
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(

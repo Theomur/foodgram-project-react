@@ -1,4 +1,4 @@
-from django.db.models import BooleanField, Exists, OuterRef, Sum
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,7 +17,7 @@ from .pagination import PageSizeControlPagination
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
                           RecipeReadSerializer, RecipeShortSerializer,
-                          SubscriptionsSerializer, SubscribeSerializer,
+                          SubscribeSerializer, SubscriptionsSerializer,
                           TagSerializer)
 
 
@@ -96,27 +96,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeCreateSerializer
 
-    def get_queryset(self):
-        favorite_subquery = Favorite.objects.filter(
-            user=OuterRef('pk'),
-            recipe=OuterRef('pk')
-        )
-        shopping_cart_subquery = Shopping_cart.objects.filter(
-            user=OuterRef('pk'),
-            recipe=OuterRef('pk')
-        )
-        if self.request.user.is_authenticated:
-            queryset = Recipe.objects.annotate(
-                is_favorited=Exists(favorite_subquery,
-                                    output_field=BooleanField()),
-                is_in_shopping_cart=Exists(shopping_cart_subquery,
-                                           output_field=BooleanField()),
-            )
-        else:
-            queryset = Recipe.objects.all().order_by("-id")
-
-        return queryset
-
     @action(detail=True, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk):
@@ -136,21 +115,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.delete_from(Shopping_cart, request.user, pk)
 
     def add_to(self, model, user, pk):
-        if model.objects.filter(user=user, recipe__id=pk).exists():
-            return Response({'errors': 'Рецепт уже добавлен!'},
+        try:
+            recipe = Recipe.objects.get(id=pk)
+        except Recipe.DoesNotExist:
+            return Response("Recipe not found.",
                             status=status.HTTP_400_BAD_REQUEST)
-        recipe = get_object_or_404(Recipe, id=pk)
-        model.objects.create(user=user, recipe=recipe)
+
+        data = {'user': user.id, 'recipe': recipe.id}
+        serializer = RecipeReadSerializer(
+            data=data, context={'request': self.request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+
         serializer = RecipeShortSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete_from(self, model, user, pk):
         obj = model.objects.filter(user=user, recipe__id=pk)
-        if obj.exists():
-            obj.delete()
+        deleted_count, _ = obj.delete()
+        if deleted_count > 0:
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': 'Рецепт уже удален!'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'errors': 'Рецепт уже удален!'},
+                            status=status.HTTP_204_NO_CONTENT)
 
     def create_file_and_response(self, ingredients):
         file_list = []
