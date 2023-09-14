@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from progress.bar import IncrementalBar
+
 from recipes.models import Ingredient
 
 
@@ -18,7 +19,10 @@ class Command(BaseCommand):
     help = "Load ingredients to DB"
 
     def handle(self, *args, **options):
-        path = os.path.join(settings.BASE_DIR, 'data', 'ingredients.csv')
+        path = os.path.join(settings.BASE_DIR,
+                            os.pardir, os.pardir,
+                            'data', 'ingredients.csv')
+        path = os.path.normpath(path)
         with open(path, 'r', encoding='utf-8') as file:
             row_count = sum(1 for row in file)
         with open(path, 'r', encoding='utf-8') as file:
