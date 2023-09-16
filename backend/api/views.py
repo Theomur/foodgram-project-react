@@ -46,14 +46,23 @@ class UserViewSet(UserViewSet):
         author = get_object_or_404(User, id=author_id)
 
         if request.method == 'POST':
-            serializer = SubscribeSerializer(author,
-                                             data=request.data,
-                                             context={"request": request})
-            serializer.is_valid(raise_exception=True)
-            Subscribe.objects.create(user=user, author=author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        Subscribe.objects.filter(user=user, author=author).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            user = request.user
+            author_id = self.kwargs.get('id')
+            author = get_object_or_404(User, id=author_id)
+
+            if request.method == 'POST':
+                serializer = SubscribeSerializer(author,
+                                                 data=request.data,
+                                                 context={"request": request})
+                serializer.is_valid(raise_exception=True)
+                Subscribe.objects.create(user=user, author=author)
+                return Response(serializer.data,
+                                status=status.HTTP_201_CREATED)
+        subscribe = Subscribe.objects.filter(user=user, author=author)
+        deleted, _ = subscribe.delete()
+        if deleted:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(mixins.ListModelMixin,
@@ -64,7 +73,6 @@ class IngredientViewSet(mixins.ListModelMixin,
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter, )
     search_fields = ('^name', )
-    pagination_class = None
 
 
 class TagViewSet(mixins.ListModelMixin,
@@ -73,7 +81,6 @@ class TagViewSet(mixins.ListModelMixin,
     permission_classes = (AllowAny, )
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -136,9 +143,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         deleted_count, _ = obj.delete()
         if deleted_count > 0:
             return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response({'errors': 'Рецепт уже удален!'},
-                            status=status.HTTP_204_NO_CONTENT)
+        return Response({'errors': 'Рецепт уже удален!'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     def create_file_and_response(self, ingredients):
         file_list = []

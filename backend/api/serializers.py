@@ -75,7 +75,7 @@ class SubscribeSerializer(serializers.Serializer):
         model = Subscribe
         fields = ('user', 'author')
 
-    def validate_subscription(self, data):
+    def validate(self, data):
         author = self.instance
         user = self.context.get('request').user
         if Subscribe.objects.filter(author=author, user=user).exists():
