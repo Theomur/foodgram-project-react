@@ -1,27 +1,27 @@
-from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+
+from django.conf import settings
+from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from foodgram.settings import FILE_NAME
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            Shopping_cart, Tag)
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from users.models import Subscribe, User
-from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
 from rest_framework.viewsets import GenericViewSet
 
 from .filters import RecipeFilter
 from .pagination import PageSizeControlPagination
 from .permissions import IsAuthentificatedAndAuthorOrReadOnly
-from .serializers import (IngredientSerializer, RecipeCreateSerializer,
-                          RecipeReadSerializer,
-                          SubscribeSerializer, SubscriptionsSerializer,
-                          TagSerializer, ShoppingSerializer,
-                          FavoriteSerializer)
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          RecipeCreateSerializer, RecipeReadSerializer,
+                          ShoppingSerializer, SubscribeSerializer,
+                          SubscriptionsSerializer, TagSerializer)
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            Shopping_cart, Tag)
+from users.models import Subscribe, User
 
 
 class UserViewSet(UserViewSet):
@@ -113,7 +113,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             '{} - {} {}.'.format(*ingredient)) for ingredient in ingredients]
         file_content = 'Cписок покупок:\n' + '\n'.join(file_list)
         response = HttpResponse(file_content, content_type='text/plain')
-        response['Content-Disposition'] = (f'attachment; filename={FILE_NAME}')
+        response['Content-Disposition'] = (
+            f'attachment; filename={settings.FILE_NAME}'
+        )
         return response
 
     @action(detail=False, methods=['get'],
