@@ -11,14 +11,17 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from users.models import Subscribe, User
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
+from rest_framework.viewsets import GenericViewSet
 
 from .filters import RecipeFilter
 from .pagination import PageSizeControlPagination
 from .permissions import IsAuthentificatedAndAuthorOrReadOnly
 from .serializers import (IngredientSerializer, RecipeCreateSerializer,
-                          RecipeReadSerializer, RecipeShortSerializer,
+                          RecipeReadSerializer,
                           SubscribeSerializer, SubscriptionsSerializer,
-                          TagSerializer)
+                          TagSerializer, ShoppingSerializer,
+                          FavoriteSerializer)
 
 
 class UserViewSet(UserViewSet):
@@ -62,7 +65,8 @@ class UserViewSet(UserViewSet):
         deleted, _ = subscribe.delete()
         if deleted:
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response("Такой подписки нет",
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(mixins.ListModelMixin,
@@ -103,49 +107,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeCreateSerializer
 
-    @action(detail=True, methods=['post'],
-            permission_classes=(IsAuthenticated,))
-    def favorite(self, request, pk):
-        return self.add_to(Favorite, request.user, pk)
-
-    @favorite.mapping.delete
-    def favorite_delete(self, request, pk):
-        return self.delete_from(Favorite, request.user, pk)
-
-    @action(detail=True, methods=['post'],
-            permission_classes=(IsAuthenticated,))
-    def shopping_cart(self, request, pk):
-        return self.add_to(Shopping_cart, request.user, pk)
-
-    @shopping_cart.mapping.delete
-    def shopping_cart_delete(self, request, pk):
-        return self.delete_from(Shopping_cart, request.user, pk)
-
-    def add_to(self, model, user, pk):
-        try:
-            recipe = Recipe.objects.get(id=pk)
-        except Recipe.DoesNotExist:
-            return Response("Recipe not found.",
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        data = {'user': user.id, 'recipe': recipe.id}
-        serializer = RecipeReadSerializer(
-            data=data, context={'request': self.request}
-        )
-        if serializer.is_valid():
-            serializer.save()
-
-        serializer = RecipeShortSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete_from(self, model, user, pk):
-        obj = model.objects.filter(user=user, recipe__id=pk)
-        deleted_count, _ = obj.delete()
-        if deleted_count > 0:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': 'Рецепт уже удален!'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
     def create_file_and_response(self, ingredients):
         file_list = []
         [file_list.append(
@@ -167,3 +128,53 @@ class RecipeViewSet(viewsets.ModelViewSet):
                          'ingredient__measurement_unit')
         )
         return self.create_file_and_response(ingredients)
+
+
+class ShoppingListViewSet(DestroyModelMixin, CreateModelMixin, GenericViewSet):
+    queryset = Shopping_cart.objects.all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ShoppingSerializer
+
+    def create(self, request, *args, **kwargs):
+        data = {'user': request.user.id, 'recipe': self.kwargs.get('id')}
+        serializer = ShoppingSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        obj = Shopping_cart.objects.filter(
+            user_id=request.user.id,
+            recipe_id=self.kwargs.get('id')
+        )
+        if obj:
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response("Такого рецепта нет в корзине",
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class FavoriteListViewSet(DestroyModelMixin, CreateModelMixin, GenericViewSet):
+    queryset = Favorite.objects.all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FavoriteSerializer
+
+    def create(self, request, *args, **kwargs):
+        data = {'user': request.user.id, 'recipe': self.kwargs.get('id')}
+        serializer = FavoriteSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        obj = Favorite.objects.filter(
+            user_id=request.user.id,
+            recipe_id=self.kwargs.get('id')
+        )
+        if obj:
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response("Такого рецепта нет в избранном",
+                        status=status.HTTP_400_BAD_REQUEST)

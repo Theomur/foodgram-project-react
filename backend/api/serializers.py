@@ -6,8 +6,12 @@ from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
-from users.models import Subscribe, User
+from users.models import Subscribe
 from recipes.models import Favorite, Shopping_cart
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 
 
 class SubscriptionMixin:
@@ -148,10 +152,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             and Shopping_cart.objects.filter(user=request.user).exists()
         )
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        return representation
-
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
@@ -235,3 +235,62 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeReadSerializer(instance,
                                     context=self.context).data
+
+
+class ShoppingSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+
+    class Meta:
+        model = Shopping_cart
+        fields = (
+            'user',
+            'recipe',
+        )
+
+    def validate(self, data):
+        if Shopping_cart.objects.filter(
+                user_id=data['user'],
+                recipe_id=data['recipe']):
+            raise serializers.ValidationError(
+                {'shopping_cart': 'Рецепт уже в вашей корзине'})
+        return data
+
+    def create(self, validated_data):
+        recipe = validated_data['recipe']
+        Shopping_cart.objects.create(
+            user=validated_data['user'],
+            recipe=recipe
+        )
+        return recipe
+
+    def to_representation(self, instance):
+        return RecipeShortSerializer(instance).data
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+
+    class Meta:
+        model = Favorite
+        fields = (
+            'user',
+            'recipe',
+        )
+
+    def validate(self, data):
+        if Favorite.objects.filter(
+                user_id=data['user'],
+                recipe_id=data['recipe']):
+            raise serializers.ValidationError(
+                {'favorite': 'Рецепт уже в вашем избранном'})
+        return data
+
+    def create(self, validated_data):
+        recipe = validated_data['recipe']
+        Favorite.objects.create(user=validated_data['user'], recipe=recipe)
+        return recipe
+
+    def to_representation(self, instance):
+        return RecipeShortSerializer(instance).data

@@ -28,7 +28,7 @@ class Tag(models.Model):
                 message='Поле должно содержать HEX-код выбранного цвета.'
             )
         ],
-        verbose_name='тег'
+        verbose_name='цвет'
     )
 
     class Meta:
