@@ -1,5 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.transaction import atomic
+from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from drf_base64.fields import Base64ImageField
 from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
@@ -8,7 +9,6 @@ from rest_framework.exceptions import ValidationError
 
 from users.models import Subscribe
 from recipes.models import Favorite, Shopping_cart
-from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
@@ -137,20 +137,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time')
 
     def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        return (
-            request
-            and request.user.is_authenticated
-            and Favorite.objects.filter(user=request.user).exists()
-        )
+        user = self.context.get('request').user
+        return (user.is_authenticated
+                and user.favorites.filter(recipe=obj).exists())
 
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        return (
-            request
-            and request.user.is_authenticated
-            and Shopping_cart.objects.filter(user=request.user).exists()
-        )
+        user = self.context.get('request').user
+        return (user.is_authenticated
+                and user.shopping_cart.filter(recipe=obj).exists())
 
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
@@ -238,9 +232,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class ShoppingSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
-
     class Meta:
         model = Shopping_cart
         fields = (
@@ -256,16 +247,8 @@ class ShoppingSerializer(serializers.ModelSerializer):
                 {'shopping_cart': 'Рецепт уже в вашей корзине'})
         return data
 
-    def create(self, validated_data):
-        recipe = validated_data['recipe']
-        Shopping_cart.objects.create(
-            user=validated_data['user'],
-            recipe=recipe
-        )
-        return recipe
-
     def to_representation(self, instance):
-        return RecipeShortSerializer(instance).data
+        return RecipeShortSerializer(instance.recipe).data
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -287,10 +270,5 @@ class FavoriteSerializer(serializers.ModelSerializer):
                 {'favorite': 'Рецепт уже в вашем избранном'})
         return data
 
-    def create(self, validated_data):
-        recipe = validated_data['recipe']
-        Favorite.objects.create(user=validated_data['user'], recipe=recipe)
-        return recipe
-
     def to_representation(self, instance):
-        return RecipeShortSerializer(instance).data
+        return RecipeShortSerializer(instance.recipe).data

@@ -140,10 +140,9 @@ class ShoppingListViewSet(DestroyModelMixin, CreateModelMixin, GenericViewSet):
     def create(self, request, *args, **kwargs):
         data = {'user': request.user.id, 'recipe': self.kwargs.get('id')}
         serializer = ShoppingSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, *args, **kwargs):
         obj = Shopping_cart.objects.filter(
@@ -165,10 +164,9 @@ class FavoriteListViewSet(DestroyModelMixin, CreateModelMixin, GenericViewSet):
     def create(self, request, *args, **kwargs):
         data = {'user': request.user.id, 'recipe': self.kwargs.get('id')}
         serializer = FavoriteSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, *args, **kwargs):
         obj = Favorite.objects.filter(
