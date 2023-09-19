@@ -20,7 +20,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         path = os.path.join(settings.BASE_DIR,
-                            os.pardir,
                             'data', 'ingredients.csv')
         path = os.path.normpath(path)
         with open(path, 'r', encoding='utf-8') as file:
