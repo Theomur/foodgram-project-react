@@ -2,7 +2,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.transaction import atomic
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
-from drf_base64.fields import Base64ImageField
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
