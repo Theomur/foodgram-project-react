@@ -20,10 +20,10 @@
 
 ```
 git clone git@github.com:/Theomur/foodgram-project-react
+cd foodgram-project-react/backend
 
 ```
-cd foodgram-project-react/backend
-```
+
 
 Cоздать и активировать виртуальное окружение:
 
