@@ -28,6 +28,11 @@ class UserViewSet(UserViewSet):
     queryset = User.objects.all()
     pagination_class = PageSizeControlPagination
 
+    def get_permissions(self):
+        if self.action == 'me':
+            self.permission_classes = [IsAuthenticated, ]
+        return super(UserViewSet, self).get_permissions()
+
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,),
             pagination_class=PageSizeControlPagination)
@@ -49,18 +54,17 @@ class UserViewSet(UserViewSet):
         author = get_object_or_404(User, id=author_id)
 
         if request.method == 'POST':
-            user = request.user
-            author_id = self.kwargs.get('id')
-            author = get_object_or_404(User, id=author_id)
-
-            if request.method == 'POST':
-                serializer = SubscribeSerializer(author,
-                                                 data=request.data,
-                                                 context={"request": request})
-                serializer.is_valid(raise_exception=True)
-                Subscribe.objects.create(user=user, author=author)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
+            data = {'user': user.id, 'author': author.id}
+            serializer = SubscribeSerializer(data=data,
+                                             context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            instance = SubscriptionsSerializer(
+                author,
+                context={"request": request}
+            )
+            return Response(instance.data,
+                            status=status.HTTP_201_CREATED)
         subscribe = Subscribe.objects.filter(user=user, author=author)
         deleted, _ = subscribe.delete()
         if deleted:

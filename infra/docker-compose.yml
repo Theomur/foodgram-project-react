@@ -32,8 +32,6 @@ services:
     image: theomur/frontend_foodgram:latest
     volumes:
       - ../frontend/:/app/result_build/
-    depends_on:
-      - backend
 
   nginx:
     image: nginx:1.19.3
@@ -48,3 +46,4 @@ services:
       - media_value:/var/html/media/
     depends_on:
       - frontend
+      - backend

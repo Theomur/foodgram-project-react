@@ -74,7 +74,7 @@ class SubscriptionsSerializer(UsersSerializer):
         return serializer.data
 
 
-class SubscribeSerializer(serializers.Serializer):
+class SubscribeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscribe
         fields = ('user', 'author')
@@ -177,25 +177,29 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                   'name', 'text',
                   'cooking_time', 'author')
 
-    def validate(self, obj):
-        if not obj.get('tags'):
+    def validate(self, data):
+        if not data.get('image'):
+            raise serializers.ValidationError(
+                {'image': 'Нужно загрузить картинку.'}
+            )
+        if not data.get('tags'):
             raise serializers.ValidationError(
                 {'tags': 'Нужно указать минимум 1 тег.'}
             )
-        if len({tag.id for tag in obj.get('tags')}) != len(obj.get('tags')):
+        if len({tag.id for tag in data.get('tags')}) != len(data.get('tags')):
             raise serializers.ValidationError(
                 {'tags': 'Теги должны быть уникальны.'}
             )
-        if not obj.get('ingredients'):
+        if not data.get('ingredients'):
             raise serializers.ValidationError(
                 {'ingredients': 'Нужно указать минимум 1 ингредиент.'}
             )
-        if (len({ingredient['id'] for ingredient in obj.get('ingredients')})
-           != len(obj.get('ingredients'))):
+        if (len({ingredient['id'] for ingredient in data.get('ingredients')})
+           != len(data.get('ingredients'))):
             raise serializers.ValidationError(
                 {'ingredients': 'Ингредиенты должны быть уникальны.'}
             )
-        return obj
+        return data
 
     def tags_and_ingredients_set(self, recipe, tags, ingredients):
         recipe.tags.set(tags)
@@ -252,9 +256,6 @@ class ShoppingSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
-
     class Meta:
         model = Favorite
         fields = (
