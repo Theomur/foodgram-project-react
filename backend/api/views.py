@@ -1,16 +1,18 @@
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-
 from django.conf import settings
 from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            Shopping_cart, Tag)
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from users.models import Subscribe, User
 
 from .filters import RecipeFilter
 from .pagination import PageSizeControlPagination
@@ -19,9 +21,6 @@ from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeReadSerializer,
                           ShoppingSerializer, SubscribeSerializer,
                           SubscriptionsSerializer, TagSerializer)
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            Shopping_cart, Tag)
-from users.models import Subscribe, User
 
 
 class UserViewSet(UserViewSet):

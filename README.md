@@ -16,45 +16,41 @@
 
 ### Как запустить проект:
 
-Клонировать репозиторий и перейти в папку backend в командной строке:
+Клонировать репозиторий по [ссылке](https://github.com/Theomur/foodgram-project-react)
 
+Заполнить *.env* файл в соответствии с *.env.example*, например:
 ```
-git clone git@github.com:/Theomur/foodgram-project-react
-cd foodgram-project-react/backend
+SECRET_KEY=django-insecure-1234567890
+DEBUG=False
+ALLOWED_HOSTS=127.0.0.1,localhost,yandex-project.com
+SQLITE_DB=False
 
-```
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres
 
-
-Cоздать и активировать виртуальное окружение (Для работы необходима переменная окружения, пример которой представлен файлом *.env.example*):
-
-```
-python -m venv venv
-```
-
-```
-source venv/Scripts/activate
-```
-
-Установить зависимости из файла requirements.txt:
-
-```
-python -m pip install --upgrade pip
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=postgres
 ```
 
+Собрать контейнеры:
 ```
-pip install -r requirements.txt
-```
-
-Выполнить миграции:
-
-```
-python manage.py migrate
+cd foodgram-project-react/infra
+sudo docker compose up -d
 ```
 
-Запустить проект:
-
+Сделать миграции, собрать статику и создать суперпользователя:
 ```
-python3 manage.py runserver
+sudo docker compose exec -T backend python manage.py makemigrations users
+sudo docker compose exec -T backend python manage.py makemigrations recipes
+sudo docker compose exec -T backend python manage.py migrate
+sudo docker compose exec -T backend python manage.py collectstatic --no-input
+```
+
+Чтобы заполнить базу данных начальными данными списка ингридиетов выполните:
+```
+sudo docker compose exec -T backend python manage.py load_ingredients
 ```
 
 Доступ к сайту:
@@ -62,6 +58,8 @@ http://158.160.76.235/
 
 Доступ в админку:
 http://158.160.76.235/admin
+
+Данные для работы с админкой:
 ```
 login: admin@mail.com
 password: 0000

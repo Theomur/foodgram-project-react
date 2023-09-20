@@ -178,10 +178,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                   'cooking_time', 'author')
 
     def validate(self, data):
-        if not data.get('image'):
-            raise serializers.ValidationError(
-                {'image': 'Нужно загрузить картинку.'}
-            )
         if not data.get('tags'):
             raise serializers.ValidationError(
                 {'tags': 'Нужно указать минимум 1 тег.'}
